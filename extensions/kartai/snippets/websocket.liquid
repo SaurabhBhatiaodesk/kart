@@ -1,0 +1,134 @@
+
+      
+      <!-- Text field to input the message -->
+      {% comment %} <input type="text" id="messageInput" placeholder="Type your message here..." style="width: 300px;"> {% endcomment %}
+      
+      <!-- Button to send the message -->
+      {% comment %} <button id="sendButton">Send</button> {% endcomment %}
+    
+      <!-- Container to display the server responses -->
+      {% comment %} <div id="output" style="white-space: pre-wrap; margin-top: 20px;"></div> {% endcomment %}
+    
+      <script>
+        const socketUrl = 'wss://platform.omni-backend.com/ws/chat/';
+        const socket = new WebSocket(socketUrl);
+    
+        // Event listener for when the connection is open
+        socket.onopen = function (event) {
+          console.log('WebSocket connection opened:', event);
+          appendMessage('Connected to server');
+        };
+    
+        // Event listener for when a message is received from the server
+        socket.onmessage = function (event) {
+          console.log('Message from server:', event.data);
+    
+          const data = JSON.parse(event.data);
+    
+          if (data.type === 'chat') {
+            appendMessage(`${data.message}`);
+          } else if (data.type === 'followup') {
+            appendFollowUpQuestions(data.questions);
+          } else if (data.type === 'recommendations') {
+            appendProductRecommendations(data.products);
+          }
+        };
+    
+        // Function to append a chat message
+        function appendMessage(message) {
+          const outputDiv = document.getElementById('output');
+          const p = document.createElement('p');
+          p.textContent = message;
+          outputDiv.appendChild(p);
+        }
+    
+        // Function to append follow-up questions
+        function appendFollowUpQuestions(questions) {
+          const outputDiv = document.getElementById('output');
+          const ul = document.createElement('ul');
+          ul.textContent = "Follow-Up Questions:";
+    
+          questions.forEach(question => {
+            const li = document.createElement('li');
+            li.textContent = question;
+            ul.appendChild(li);
+          });
+    
+          outputDiv.appendChild(ul);
+        }
+    
+        // Function to append product recommendations
+        function appendProductRecommendations(products) {
+          const outputDiv = document.getElementById('output');
+          const productSection = document.createElement('div');
+          productSection.innerHTML = "<h3>Product Recommendations:</h3>";
+    
+          products.forEach(product => {
+            const productDiv = document.createElement('div');
+            productDiv.style.marginBottom = "20px";
+    
+            // Create product title
+            const title = document.createElement('h4');
+            title.textContent = product.name;
+            productDiv.appendChild(title);
+    
+            // Create product price
+            const price = document.createElement('p');
+            price.textContent = `Price: $${product.price}`;
+            productDiv.appendChild(price);
+    
+            // Create product link
+            const link = document.createElement('a');
+            link.href = product.url;
+            link.target = "_blank";
+            link.textContent = "View Product";
+            productDiv.appendChild(link);
+    
+            // Display product images
+            product.images.forEach(image => {
+              const img = document.createElement('img');
+              img.src = image;
+              img.alt = product.name;
+              img.style.width = "100px";
+              img.style.margin = "5px";
+              productDiv.appendChild(img);
+            });
+    
+            productSection.appendChild(productDiv);
+          });
+    
+          outputDiv.appendChild(productSection);
+        }
+    
+        // Function to handle sending a message
+        function sendMessage() {
+            document.getElementById('output').innerHTML = "";
+          const messageInput = document.getElementById('messageInput');
+          const message = messageInput.value;
+    
+          if (message) {
+            const jsonMessage = JSON.stringify({
+              type: 'default',
+              message: message,
+            });
+    
+            socket.send(jsonMessage);
+    
+            appendMessage(`You: ${message}`);
+            messageInput.value = '';
+          }
+        }
+    
+        // Add event listener to the send button
+        document.getElementById('sendButton').addEventListener('click', sendMessage);
+    
+        // Optionally, add event listener to the input field to send message on Enter key press
+        document.getElementById('messageInput').addEventListener('keypress', function (event) {
+          if (event.key === 'Enter') {
+            sendMessage();
+          }
+        });
+    
+      </script>
+   
+    
